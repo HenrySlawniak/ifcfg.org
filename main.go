@@ -54,7 +54,9 @@ func main() {
 }
 
 func pageHandler(w http.ResponseWriter, r *http.Request) {
-	ip := strings.SplitAfterN(r.RemoteAddr, ":", 2)[0]
+	split := strings.Split(r.RemoteAddr, ":")
+	ip := strings.Join(split[:len(split)-2], ":")
+	// ip := strings.SplitAfterN(r.RemoteAddr, ":", 2)[0]
 	log.Infof("Handling %s from url %s\n\tUA:%s\n", ip, r.URL.String(), r.Header.Get("User-Agent"))
 	w.Write([]byte(ip))
 }
