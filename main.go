@@ -34,7 +34,7 @@ func main() {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello world"))
+		w.Write([]byte(r.RemoteAddr))
 	})
 
 	rootSrv := &http.Server{
@@ -42,29 +42,5 @@ func main() {
 		TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
 	}
 
-	v4Mux := http.NewServeMux()
-	v4Mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("v4 Hello world"))
-	})
-
-	v6Mux := http.NewServeMux()
-	v6Mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("v6 Hello world"))
-	})
-
-	v4Srv := &http.Server{
-		Addr:      "v4.ifcfg.org:https",
-		TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
-		Handler:   v4Mux,
-	}
-
-	v6Srv := &http.Server{
-		Addr:      "v6.ifcfg.org:https",
-		TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
-		Handler:   v6Mux,
-	}
-
-	go rootSrv.ListenAndServeTLS("", "")
-	go v4Srv.ListenAndServeTLS("", "")
-	v6Srv.ListenAndServeTLS("", "")
+	rootSrv.ListenAndServeTLS("", "")
 }
