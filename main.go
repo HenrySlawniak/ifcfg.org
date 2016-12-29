@@ -29,7 +29,7 @@ import (
 func main() {
 	m := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist("ifcfg.org"),
+		HostPolicy: autocert.HostWhitelist("ifcfg.org", "v4.ifcfg.org", "v6.ifcfg.org"),
 		Cache:      autocert.DirCache("certs"),
 	}
 
@@ -37,10 +37,34 @@ func main() {
 		w.Write([]byte("Hello world"))
 	})
 
-	srv := &http.Server{
+	rootSrv := &http.Server{
 		Addr:      ":https",
 		TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
 	}
 
-	srv.ListenAndServeTLS("", "")
+	v4Mux := http.NewServeMux()
+	v4Mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("v4 Hello world"))
+	})
+
+	v6Mux := http.NewServeMux()
+	v6Mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("v6 Hello world"))
+	})
+
+	v4Srv := &http.Server{
+		Addr:      "v4.ifcfg.org:https",
+		TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
+		Handler:   v4Mux,
+	}
+
+	v6Srv := &http.Server{
+		Addr:      "v6.ifcfg.org:https",
+		TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
+		Handler:   v6Mux,
+	}
+
+	go rootSrv.ListenAndServeTLS("", "")
+	go v4Srv.ListenAndServeTLS("", "")
+	v6Srv.ListenAndServeTLS("", "")
 }
