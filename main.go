@@ -22,20 +22,28 @@ package main
 
 import (
 	"crypto/tls"
+	"github.com/go-playground/log"
+	"github.com/go-playground/log/handlers/console"
 	"golang.org/x/crypto/acme/autocert"
 	"net/http"
+	"strings"
+	"time"
 )
 
 func main() {
+	cLog := console.New()
+	cLog.SetTimestampFormat(time.RFC3339)
+	log.RegisterHandler(cLog, log.AllLevels...)
+
+	log.Info("Starting ifcfg.org")
+
 	m := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
 		HostPolicy: autocert.HostWhitelist("ifcfg.org", "v4.ifcfg.org", "v6.ifcfg.org"),
 		Cache:      autocert.DirCache("certs"),
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(r.RemoteAddr))
-	})
+	http.HandleFunc("/", pageHandler)
 
 	rootSrv := &http.Server{
 		Addr:      ":https",
@@ -43,4 +51,10 @@ func main() {
 	}
 
 	rootSrv.ListenAndServeTLS("", "")
+}
+
+func pageHandler(w http.ResponseWriter, r *http.Request) {
+	ip := strings.Split(r.RemoteAddr, ":")[0]
+	log.Infof("Handling %s from url %s\n\tUA:%s\n", ip, r.URL.String(), r.Header.Get("User-Agent"))
+	w.Write([]byte(ip))
 }
