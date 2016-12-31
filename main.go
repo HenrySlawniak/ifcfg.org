@@ -70,5 +70,11 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 	ip = strings.Replace(ip, "[", "", 1)
 	ip = strings.Replace(ip, "]", "", 1)
 	log.Infof("Handling %s from url %s\n\tUA: %s\n", ip, r.URL.String(), r.Header.Get("User-Agent"))
+
+	if strings.Contains(r.Header.Get("User-Agent"), "curl") || r.Header.Get("Accepts") == "text/plain" {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte(ip + "\n"))
+		return
+	}
 	w.Write([]byte(ip))
 }
