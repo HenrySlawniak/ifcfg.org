@@ -43,35 +43,24 @@ func main() {
 		Cache:      autocert.DirCache("certs"),
 	}
 
-	// http.HandleFunc("/", pageHandler)
-
 	httpSrv := &http.Server{
-		Addr: ":http",
+		Addr:    ":http",
+		Handler: http.HandlerFunc(httpRedirectHandler),
 	}
-
-	httpSrv.Handler = http.HandlerFunc(httpRedirectHandler)
 
 	go httpSrv.ListenAndServe()
 
 	rootSrv := &http.Server{
 		Addr:      ":https",
 		TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
+		Handler:   http.HandlerFunc(pageHandler),
 	}
-
-	rootSrv.Handler = http.HandlerFunc(pageHandler)
 
 	rootSrv.ListenAndServeTLS("", "")
 }
 
 func httpRedirectHandler(w http.ResponseWriter, r *http.Request) {
-	log.Info(r.URL.RawPath)
-	log.Info(r.URL.RawQuery)
-	log.Info(r.URL.Path)
-	log.Info(r.URL.Host)
-	log.Info(r.URL.Scheme)
-	log.Info(r.URL)
-
-	// http.Redirect(w, r, r.URL., code)
+	http.Redirect(w, r, "https://"+r.Host+r.URL.String(), http.StatusMovedPermanently)
 }
 
 func pageHandler(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +69,6 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 	// This is bad, and I feel bad
 	ip = strings.Replace(ip, "[", "", 1)
 	ip = strings.Replace(ip, "]", "", 1)
-	// ip := strings.SplitAfterN(r.RemoteAddr, ":", 2)[0]
 	log.Infof("Handling %s from url %s\n\tUA: %s\n", ip, r.URL.String(), r.Header.Get("User-Agent"))
 	w.Write([]byte(ip))
 }
