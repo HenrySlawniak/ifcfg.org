@@ -14,5 +14,5 @@ for target in windows:amd64 linux:amd64 darwin:amd64 linux:386 linux:arm; do
   else
     go get github.com/stackimpact/stackimpact-go
   fi
-  bash -c "go build -ldflags '-w' -v -o $OUT ."
+  bash -c "go build -ldflags '-w' -o $OUT ."
 done
