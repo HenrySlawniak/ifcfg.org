@@ -22,6 +22,8 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
+	"github.com/dgryski/go-identicon"
 	"github.com/go-playground/log"
 	"github.com/go-playground/log/handlers/console"
 	"golang.org/x/crypto/acme/autocert"
@@ -73,6 +75,11 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 	ip = strings.Replace(ip, "[", "", 1)
 	ip = strings.Replace(ip, "]", "", 1)
 	log.Infof("Handling %s from url %s\n\tUA: %s\n", ip, r.URL.String(), r.Header.Get("User-Agent"))
+	if strings.Contains(r.URL.String(), "favicon.ico") {
+		w.Header().Set("Content-Type", "image/png")
+		w.Write(generateIco([]byte(ip)))
+		return
+	}
 
 	if strings.Contains(r.Header.Get("User-Agent"), "curl") || r.Header.Get("Accepts") == "text/plain" {
 		w.Header().Set("Content-Type", "text/plain")
@@ -80,4 +87,11 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte(ip))
+}
+
+func generateIco(dat []byte) []byte {
+	if dat == nil {
+		dat = []byte(fmt.Sprintf("%x", time.Now().UnixNano()))
+	}
+	return identicon.New7x7([]byte{0x4, 0x5, 0x86}).Render(dat)
 }
