@@ -33,6 +33,8 @@ import (
 	"time"
 )
 
+const version = "1.0.0"
+
 func main() {
 	cLog := console.New()
 	cLog.SetTimestampFormat(time.RFC3339)
@@ -69,6 +71,7 @@ func httpRedirectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func pageHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Server", "ifcfg.org v"+version)
 	split := strings.Split(r.RemoteAddr, ":")
 	ip := strings.Join(split[:len(split)-1], ":")
 	// This is bad, and I feel bad
