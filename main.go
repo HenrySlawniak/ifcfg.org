@@ -25,6 +25,7 @@ import (
 	"github.com/go-playground/log"
 	"github.com/go-playground/log/handlers/console"
 	"golang.org/x/crypto/acme/autocert"
+	"golang.org/x/net/http2"
 	"net/http"
 	"strings"
 	"time"
@@ -55,6 +56,8 @@ func main() {
 		TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
 		Handler:   http.HandlerFunc(pageHandler),
 	}
+
+	http2.ConfigureServer(rootSrv, &http2.Server{})
 
 	rootSrv.ListenAndServeTLS("", "")
 }
