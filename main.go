@@ -22,6 +22,7 @@ package main
 
 import (
 	"crypto/tls"
+	"flag"
 	"fmt"
 	"github.com/dgryski/go-identicon"
 	"github.com/go-playground/log"
@@ -35,16 +36,24 @@ import (
 
 const version = "1.0.0"
 
+var domains = flag.String("domain", "ifcfg.org,v4.ifcfg.org,v6.ifcfg.org", "A comma-seperaated list of domains to get a certificate for.")
+
 func main() {
+	flag.Parse()
 	cLog := console.New()
 	cLog.SetTimestampFormat(time.RFC3339)
 	log.RegisterHandler(cLog, log.AllLevels...)
 
 	log.Info("Starting ifcfg.org")
 
+	domainList := strings.Split(*domains, ",")
+	for i, d := range domainList {
+		domainList[i] = strings.TrimSpace(d)
+	}
+
 	m := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist("ifcfg.org", "v4.ifcfg.org", "v6.ifcfg.org"),
+		HostPolicy: autocert.HostWhitelist(domainList...),
 		Cache:      autocert.DirCache("certs"),
 	}
 
