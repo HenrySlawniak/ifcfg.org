@@ -4,15 +4,17 @@ mkdir -p bin/
 
 go get -v
 
-for target in windows:amd64 linux:amd64 darwin:amd64 linux:386 linux:arm; do
-  echo "Compiling $target"
-  export GOOS=$(echo $target | cut -d: -f1) GOARCH=$(echo $target | cut -d: -f2)
-  OUT=bin/$(basename $(echo $PWD))_${GOOS}_${GOARCH}
-  if [ $GOOS == "windows" ]
-  then
-    OUT="$OUT.exe"
-  else
-    go get github.com/stackimpact/stackimpact-go
-  fi
-  bash -c "go build -ldflags '-w' -o $OUT ."
+for targetArch in amd64 386 arm arm64 mips64 mips64le ppc64 ppc64le; do
+  for targetOS in windows linux darwin freebsd openbsd netbsd plan9 solaris dragonfly android; do
+    echo "Compiling $targetOS:$targetArch"
+    export GOOS=$targetOS
+    export GOARCH=$targetArch
+
+    OUT=bin/$(basename $(echo $PWD))_${GOOS}_${GOARCH}
+    if [ $GOOS == "windows" ]
+    then
+      OUT="$OUT.exe"
+    fi
+    bash -c "go build -ldflags '-w' -o $OUT ."
+  done
 done
