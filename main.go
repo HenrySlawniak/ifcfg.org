@@ -64,10 +64,15 @@ func main() {
 
 	go httpSrv.ListenAndServe()
 
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", pageHandler)
+	mux.HandleFunc("/favicon.ico", icoHandler)
+
 	rootSrv := &http.Server{
 		Addr:      ":https",
 		TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
-		Handler:   http.HandlerFunc(pageHandler),
+		Handler:   mux,
 	}
 
 	http2.ConfigureServer(rootSrv, &http2.Server{})
@@ -79,19 +84,25 @@ func httpRedirectHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "https://"+r.Host+r.URL.String(), http.StatusMovedPermanently)
 }
 
-func pageHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Server", "ifcfg.org v"+version)
+// GetIP returns the remote ip of the request, by stripping off the port from the RemoteAddr
+func GetIP(r *http.Request) string {
 	split := strings.Split(r.RemoteAddr, ":")
 	ip := strings.Join(split[:len(split)-1], ":")
 	// This is bad, and I feel bad
 	ip = strings.Replace(ip, "[", "", 1)
 	ip = strings.Replace(ip, "]", "", 1)
-	log.Infof("Handling %s from url %s\n\tUA: %s\n", ip, r.URL.String(), r.Header.Get("User-Agent"))
-	if strings.Contains(r.URL.String(), "favicon.ico") {
-		w.Header().Set("Content-Type", "image/png")
-		w.Write(generateIco([]byte(ip)))
-		return
-	}
+	return ip
+}
+
+func icoHandler(w http.ResponseWriter, r *http.Request) {
+	ip := GetIP(r)
+	w.Header().Set("Content-Type", "image/png")
+	w.Write(generateIco([]byte(ip)))
+}
+
+func pageHandler(w http.ResponseWriter, r *http.Request) {
+	ip := GetIP(r)
+	w.Header().Set("Server", "ifcfg.org v"+version)
 
 	if strings.Contains(r.Header.Get("User-Agent"), "curl") || r.Header.Get("Accepts") == "text/plain" {
 		w.Header().Set("Content-Type", "text/plain")
