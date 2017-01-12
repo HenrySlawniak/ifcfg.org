@@ -23,12 +23,12 @@ package main
 import (
 	"crypto/tls"
 	"flag"
-	"fmt"
-	"github.com/dgryski/go-identicon"
+	"github.com/HenrySlawniak/go-identicon"
 	"github.com/go-playground/log"
 	"github.com/go-playground/log/handlers/console"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
+	"image/color"
 	"net/http"
 	"strings"
 	"time"
@@ -102,6 +102,5 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func generateIco(dat []byte) []byte {
-	dat = append(dat, []byte(fmt.Sprintf("%x", time.Now().UnixNano()))[:]...)
-	return identicon.New7x7([]byte{0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}).Render(dat)
+	return identicon.New7x7([]byte{0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}).RenderWithBG(dat, color.NRGBA{0x0, 0x0, 0x0, 0x0})
 }
