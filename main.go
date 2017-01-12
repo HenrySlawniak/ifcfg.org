@@ -66,7 +66,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", pageHandler)
+	mux.HandleFunc("/", rootHandler)
 	mux.HandleFunc("/favicon.ico", icoHandler)
 
 	rootSrv := &http.Server{
@@ -100,7 +100,7 @@ func icoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(generateIco([]byte(ip)))
 }
 
-func pageHandler(w http.ResponseWriter, r *http.Request) {
+func rootHandler(w http.ResponseWriter, r *http.Request) {
 	ip := GetIP(r)
 	w.Header().Set("Server", "ifcfg.org v"+version)
 
