@@ -130,6 +130,13 @@ func detailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	j, err := json.MarshalIndent(detail, "", "  ")
+	if err != nil {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("Encountered an error: " + err.Error()))
+		debug.PrintStack()
+		log.Error(err)
+		return
+	}
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write(j)
 }
