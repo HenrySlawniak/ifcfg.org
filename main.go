@@ -22,6 +22,8 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
+	"encoding/xml"
 	"flag"
 	"github.com/HenrySlawniak/go-identicon"
 	"github.com/go-playground/log"
@@ -29,14 +31,17 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
 	"image/color"
+	"io/ioutil"
 	"net/http"
+	"runtime/debug"
 	"strings"
 	"time"
 )
 
-const version = "1.0.0"
+const version = "1.1.0"
 
 var domains = flag.String("domain", "ifcfg.org,v4.ifcfg.org,v6.ifcfg.org", "A comma-seperaated list of domains to get a certificate for.")
+var client = &http.Client{}
 
 func main() {
 	flag.Parse()
@@ -67,6 +72,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", rootHandler)
+	mux.HandleFunc("/detail", detailHandler)
 	mux.HandleFunc("/favicon.ico", icoHandler)
 
 	rootSrv := &http.Server{
@@ -104,7 +110,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	ip := GetIP(r)
 	w.Header().Set("Server", "ifcfg.org v"+version)
 
-	if strings.Contains(r.Header.Get("User-Agent"), "curl") || r.Header.Get("Accepts") == "text/plain" {
+	if strings.Contains(r.Header.Get("User-Agent"), "curl") || r.Header.Get("Accept") == "text/plain" {
 		w.Header().Set("Content-Type", "text/plain")
 		w.Write([]byte(ip + "\n"))
 		return
@@ -112,6 +118,50 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(ip))
 }
 
+func detailHandler(w http.ResponseWriter, r *http.Request) {
+	ip := GetIP(r)
+	w.Header().Set("Server", "ifcfg.org v"+version)
+	detail, err := ARINLookup(ip)
+	if err != nil {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("Encountered an error: " + err.Error()))
+		debug.PrintStack()
+		log.Error(err)
+		return
+	}
+	j, err := json.MarshalIndent(detail, "", "  ")
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write(j)
+}
+
 func generateIco(dat []byte) []byte {
 	return identicon.New7x7([]byte{0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}).RenderWithBG(dat, color.NRGBA{0x0, 0x0, 0x0, 0x0})
+}
+
+func ARINLookup(ip string) (*ARINroot, error) {
+	url := "https://whois.arin.net/rest/ip/" + ip
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Accept", "application/xml")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	bod, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	dat := ARINroot{}
+	err = xml.Unmarshal(bod, &dat)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dat, nil
 }
